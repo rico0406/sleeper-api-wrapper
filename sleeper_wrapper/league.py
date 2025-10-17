@@ -1,4 +1,4 @@
-from typing import List, Dict, Tuple, Optional
+from typing import List, Dict, Tuple, Optional, Any
 from .base_api import BaseApi
 from .stats import Stats
 
@@ -82,34 +82,42 @@ class League(BaseApi):
         return result_dict
 
     def get_scoreboards(
-        self,
-        rosters: List[Dict],
-        matchups: List[Dict],
-        users: List[Dict]
+            self,
+            rosters: List[Dict],
+            matchups: List[Dict],
+            users: List[Dict]
     ) -> Optional[Dict[int, List[Tuple[str, float]]]]:
         """
-			Returns the scoreboard of the league for the given matchups.
+        Returns a list of matchups in a JSON-like format containing both teams'
+        names and scores for each game.
 
-			Args:
-				rosters (List[Dict]): List of roster objects from Sleeper API.
-				matchups (List[Dict]): List of matchup objects from Sleeper API.
-				users (List[Dict]): List of user objects from Sleeper API.
+        Args:
+            rosters (List[Dict]): List of roster objects from Sleeper API.
+            matchups (List[Dict]): List of matchup objects from Sleeper API.
+            users (List[Dict]): List of user objects from Sleeper API.
 
-			Returns:
-				Optional[Dict[int, List[Tuple[str, float]]]]:
-					A dictionary mapping `matchup_id` to a list of tuples,
-					each containing (`team_name`, `score`). Returns None
-					if there are no matchups.
+		Returns:
+            Optional[List[Dict[str, object]]]:
+                A list of dictionaries, each representing one matchup with keys:
+                - "matchup_id" (int)
+                - "team_a_name" (str)
+                - "team_a_points" (float)
+                - "team_b_name" (str)
+                - "team_b_points" (float)
 
-			Notes:
-				- The score for each team is obtained directly from the `points` field in the matchup object.
-				- If the `points` field is None, it defaults to 0.
-				- Teams without a mapped owner will show "Team name not available".
+                Returns None if there are no matchups.
+
+        Notes:
+            - The score for each team is obtained directly from the `points` field in the matchup object.
+            - If the `points` field is None, it defaults to 0.
+            - Teams without a mapped owner will show "Team name not available".
         """
-        roster_id_dict = self.map_rosterid_to_ownerid(rosters)
+
 
         if len(matchups) == 0:
             return None
+
+        roster_id_dict = self.map_rosterid_to_ownerid(rosters)
 
         # Get the users to team name stats
         users_dict = self.map_users_to_team_name(users)
@@ -136,6 +144,57 @@ class League(BaseApi):
             else:
                 scoreboards_dict[matchup_id].append(team_score_tuple)
         return scoreboards_dict
+
+    def get_scoreboards_json(
+            self, rosters: List[Dict],
+            matchups: List[Dict],
+            users: List[Dict]
+    ) -> List[Dict[str, Any]]:
+        """
+        Returns the scoreboard in a JSON-friendly format.
+
+        Args:
+            rosters (List[Dict]): List of roster objects from Sleeper API.
+            matchups (List[Dict]): List of matchup objects from Sleeper API.
+            users (List[Dict]): List of user objects from Sleeper API.
+
+        Returns:
+            List[Dict[str, Any]]: A list of dictionaries, each representing a matchup with:
+                - matchup_id (int)
+                - team_a_name (str)
+                - team_a_points (float)
+                - team_b_name (str)
+                - team_b_points (float)
+
+        Notes:
+            - Uses get_scoreboards() internally to preserve original logic.
+            - If there is a matchup with only one team (e.g., bye week), team_b fields will be None.
+        """
+        raw_scoreboards = self.get_scoreboards(rosters, matchups, users)
+        if not raw_scoreboards:
+            return []
+
+        json_friendly_list = []
+        for matchup_id, teams in raw_scoreboards.items():
+            team_a_name = teams[0][0]
+            team_a_points = teams[0][1]
+            if len(teams) > 1:
+                team_b_name = teams[1][0]
+                team_b_points = teams[1][1]
+            else:
+                team_b_name = None
+                team_b_points = None
+
+            json_friendly_list.append({
+                "matchup_id": matchup_id,
+                "team_a_name": team_a_name,
+                "team_a_points": team_a_points,
+                "team_b_name": team_b_name,
+                "team_b_points": team_b_points
+            })
+
+        return json_friendly_list
+
 
     def get_close_games(self, scoreboards, close_num):
         """ -Notes: Need to find a better way to compare scores rather than abs value of the difference of floats. """
