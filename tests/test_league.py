@@ -100,7 +100,7 @@ def test_get_scoreboards(capsys):
 	matchups = league.get_matchups(1)
 	users = league.get_users()
 	rosters = league.get_rosters()
-	scoreboards = league.get_scoreboards(rosters, matchups, users, "pts_half_ppr", 1)
+	scoreboards = league.get_scoreboards(rosters, matchups, users)
 	print(scoreboards)
 	assert isinstance(scoreboards, dict)
 
