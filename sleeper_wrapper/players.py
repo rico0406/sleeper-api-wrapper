@@ -20,7 +20,7 @@ class Players(BaseApi):
             season_type: str,
             season: int,
             week: Optional[int] = None
-    ) -> Dict[Dict[str, str]]:
+    ) -> Dict[str, Dict[str, str]]:
         """
 		Retrieve ownership and rostering information for NFL players.
 
