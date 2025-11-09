@@ -14,7 +14,7 @@ class Players(BaseApi):
 		return self._call("https://api.sleeper.app/v1/players/{}/trending/{}?lookback_hours={}&limit={}".format(sport, add_drop, hours, limit))
 
 
-	def get_player_ownership(
+	def get_players_ownership(
 			self,
 			season_type: str,
 			season: int,
